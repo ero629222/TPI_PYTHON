@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajo Práctico Integrador abm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <a class="navbar-brand" href="#">GRUPO9 ABM</a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav ml-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="#">Inicio</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Funcionalidades</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Contáctenos</a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+    </header>
+
+    <div class="container mt-5">
+        <h1 class="text-center">FORMULARIO GRUPO 9</h1>
+        <div class="card shadow p-4">
+            <form id="userForm">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="username" class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="name" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </form>
+        </div>
+
+        <table class="table mt-5">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Password</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody id="recordsTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2024 Codo a Codo :: Com 24159 :: Grupo 9 App. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        const form = document.getElementById('userForm');
+        const tableBody = document.getElementById('recordsTableBody');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                username: form.username.value,
+                name: form.name.value,
+                password: form.password.value,
+            };
+            const response = await fetch('/api/records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            const user = await response.json();
+            addUserToTable(user);
+            form.reset();
+        });
+
+        async function loadUsers() {
+            const response = await fetch('/api/records');
+            const users = await response.json();
+            users.forEach(addUserToTable);
+        }
+
+        function addUserToTable(user) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.name}</td>
+                <td>${user.password}</td>
+                <td><button class="btn btn-warning btn-edit" data-id="${user.id}">Edit</button></td>
+                <td><button class="btn btn-danger btn-delete" data-id="${user.id}">Delete</button></td>
+            `;
+            tableBody.appendChild(row);
+
+            const editButton = row.querySelector('.btn-edit');
+            const deleteButton = row.querySelector('.btn-delete');
+
+            editButton.addEventListener('click', () => editUser(user.id));
+            deleteButton.addEventListener('click', () => deleteUser(user.id));
+        }
+
+        async function editUser(id) {
+            const username = prompt('Enter new username');
+            const name = prompt('Enter new name');
+            const password = prompt('Enter new password');
+            const response = await fetch(`/api/records/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, name, password }),
+            });
+            const user = await response.json();
+            updateUserInTable(user);
+        }
+
+        function updateUserInTable(user) {
+            const row = tableBody.querySelector(`tr td:first-child:contains('${user.id}')`).parentNode;
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.name}</td>
+                <td>${user.password}</td>
+                <td><button class="btn btn-warning btn-edit" data-id="${user.id}">Edit</button></td>
+                <td><button class="btn btn-danger btn-delete" data-id="${user.id}">Delete</button></td>
+            `;
+        }
+
+        async function deleteUser(id) {
+            await fetch(`/api/records/${id}`, {
+                method: 'DELETE',
+            });
+            const row = tableBody.querySelector(`tr td:first-child:contains('${id}')`).parentNode;
+            tableBody.removeChild(row);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>
